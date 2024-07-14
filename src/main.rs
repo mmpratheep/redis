@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 
 fn main() {
@@ -20,11 +20,13 @@ fn main() {
 fn handle_connection(mut stream: TcpStream) {
     let pong = "+PONG\r\n";
     let ping = "PING";
-    let mut buf_reader = BufReader::new(&mut stream);
-    let request: Vec<String> = buf_reader.lines()
-        .map(|line| line.unwrap())
-        .take_while(|line| line.contains(ping))
-        .collect();
-    println!("Received request {}", request.len());
-    stream.write_all(pong.as_bytes()).expect("unable to send response");
+    let mut buf_reader = BufReader::new(stream.try_clone().expect("Failed to clone stream"));
+    loop {
+        let request: Vec<String> = buf_reader.by_ref().lines()
+            .map(|line| line.unwrap())
+            .take_while(|line| line.contains(ping))
+            .collect();
+        println!("Received request {}", request.len());
+        stream.write_all(pong.as_bytes()).expect("unable to send response");
+    }
 }
